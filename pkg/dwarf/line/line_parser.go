@@ -3,9 +3,12 @@ package line
 import (
 	"bytes"
 	"encoding/binary"
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/derekparker/delve/pkg/dwarf/util"
+	"github.com/derekparker/delve/pkg/logflags"
+	"github.com/sirupsen/logrus"
 )
 
 type DebugLinePrologue struct {
@@ -33,8 +36,7 @@ type DebugLineInfo struct {
 	// lastMachineCache[pc] is a state machine stopped at an address after pc
 	lastMachineCache map[uint64]*StateMachine
 
-	// logSuppressedErrors enables logging of otherwise suppressed errors
-	logSuppressedErrors bool
+	log *logrus.Entry
 }
 
 type FileEntry struct {
@@ -64,7 +66,14 @@ func ParseAll(data []byte) DebugLines {
 // Parse parses a single debug_line segment from buf. Compdir is the
 // DW_AT_comp_dir attribute of the associated compile unit.
 func Parse(compdir string, buf *bytes.Buffer) *DebugLineInfo {
+	logger := logrus.New().WithFields(logrus.Fields{"layer": "dwarf-line"})
+	logger.Level = logrus.DebugLevel
+	if !logflags.DebugLineErrors() {
+		logger.Logger.Out = ioutil.Discard
+	}
+
 	dbl := new(DebugLineInfo)
+	dbl.log = logger
 	dbl.Lookup = make(map[string]*FileEntry)
 	if compdir != "" {
 		dbl.IncludeDirs = append(dbl.IncludeDirs, compdir)
@@ -145,9 +154,4 @@ func readFileEntry(info *DebugLineInfo, buf *bytes.Buffer, exitOnEmptyPath bool)
 	}
 
 	return entry
-}
-
-// LogSuppressedErrors enables or disables logging of suppressed errors
-func (dbl *DebugLineInfo) LogSuppressedErrors(v bool) {
-	dbl.logSuppressedErrors = v
 }

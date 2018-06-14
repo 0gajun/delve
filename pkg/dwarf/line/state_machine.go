@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/derekparker/delve/pkg/dwarf/util"
 )
@@ -125,9 +124,7 @@ func (lineInfo *DebugLineInfo) AllPCsForFileLine(f string, l int) (pcs []uint64)
 
 	for {
 		if err := sm.next(); err != nil {
-			if lineInfo.logSuppressedErrors {
-				log.Printf("AllPCsForFileLine error: %v", err)
-			}
+			lineInfo.log.Errorf("AllPCsForFileLine error: %v", err)
 			break
 		}
 		if sm.line == l && sm.file == f && sm.address != lastAddr && sm.isStmt && sm.valid {
@@ -154,9 +151,7 @@ func (lineInfo *DebugLineInfo) AllPCsBetween(begin, end uint64, excludeFile stri
 
 	for {
 		if err := sm.next(); err != nil {
-			if lineInfo.logSuppressedErrors {
-				log.Printf("AllPCsBetween error: %v", err)
-			}
+			lineInfo.log.Errorf("AllPCsBetween error: %v", err)
 			break
 		}
 		if !sm.valid {
@@ -228,9 +223,7 @@ func (lineInfo *DebugLineInfo) PCToLine(basePC, pc uint64) (string, int) {
 func (sm *StateMachine) PCToLine(pc uint64) (string, int, bool) {
 	if !sm.started {
 		if err := sm.next(); err != nil {
-			if sm.dbl.logSuppressedErrors {
-				log.Printf("PCToLine error: %v", err)
-			}
+			sm.dbl.log.Errorf("PCToLine error: %v", err)
 			return "", 0, false
 		}
 	}
@@ -247,9 +240,7 @@ func (sm *StateMachine) PCToLine(pc uint64) (string, int, bool) {
 			}
 		}
 		if err := sm.next(); err != nil {
-			if sm.dbl.logSuppressedErrors {
-				log.Printf("PCToLine error: %v", err)
-			}
+			sm.dbl.log.Errorf("PCToLine error: %v", err)
 			break
 		}
 	}
@@ -276,9 +267,7 @@ func (lineInfo *DebugLineInfo) LineToPC(filename string, lineno int) uint64 {
 
 	for {
 		if err := sm.next(); err != nil {
-			if lineInfo.logSuppressedErrors {
-				log.Printf("LineToPC error: %v", err)
-			}
+			lineInfo.log.Errorf("LineToPC error: %v", err)
 			break
 		}
 		if foundFile && sm.file != filename {
@@ -311,9 +300,7 @@ func (lineInfo *DebugLineInfo) PrologueEndPC(start, end uint64) (pc uint64, file
 			}
 		}
 		if err := sm.next(); err != nil {
-			if lineInfo.logSuppressedErrors {
-				log.Printf("PrologueEnd error: %v", err)
-			}
+			lineInfo.log.Errorf("PrologueEnd error: %v", err)
 			return 0, "", 0, false
 		}
 	}
